@@ -1,0 +1,17 @@
+{
+  "name": "小小萌",
+  "version": "1.0.0",
+  "units": "metres",
+  "mesh_objects": 512,
+  "base_vertices": 168513,
+  "base_triangles": 331408,
+  "bones": 34,
+  "materials": 29,
+  "formats": [
+    "glb",
+    "fbx",
+    "blend"
+  ],
+  "rig": "basic FK, no face shapes or physics",
+  "reference": "assets/xiaoxiaomeng-character-model-sheet.png"
+}

@@ -1,0 +1,37 @@
+{
+  "passed": true,
+  "stats": {
+    "triangles": 622036,
+    "vertices": 424375,
+    "meshes": 512,
+    "bones": 34,
+    "bounds": [
+      0.9848995967628412,
+      1.7669534389564325,
+      0.3878544811792478
+    ]
+  },
+  "categories": {
+    "body": 151,
+    "accessories": 104,
+    "jacket": 65,
+    "hair": 78,
+    "shoes": 114
+  },
+  "page_errors": [],
+  "checks": [
+    "model load",
+    "geometry and rig",
+    "camera views",
+    "wireframe",
+    "clay",
+    "materials",
+    "layers",
+    "orthographic",
+    "skeleton",
+    "turntable",
+    "screenshot export",
+    "three file downloads",
+    "mobile layout"
+  ]
+}

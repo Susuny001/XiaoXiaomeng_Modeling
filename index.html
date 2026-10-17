@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#151a16">
+  <title>小小萌 · 3D 角色档案</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%23c8ed65'/%3E%3Cpath d='M10 10h9v9h-9zm11 0h9v9h-9zM10 21h9v9h-9zm11 0h9v9h-9z' fill='%23151a16'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="viewer/style.css">
+  <script type="importmap">{"imports":{"three":"./viewer/vendor/three.module.js"}}</script>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="./"><span class="brand-mark"><i></i><i></i><i></i><i></i></span> XIAO XIAO MENG <span class="edition">CHARACTER ARCHIVE</span></a>
+  <span class="header-right"><span class="live-dot"></span> INTERACTIVE 3D <span class="separator">/</span> VOL. 001</span>
+</header>
+<main class="workspace">
+  <aside class="sidebar">
+    <div class="eyebrow">ORIGINAL CHARACTER <span>01</span></div>
+    <h1>小小萌<span>XIAO XIAO MENG</span></h1>
+    <p class="intro">黑白之间，一抹新绿。<br>为建模、观察与再创作准备的角色档案。</p>
+    <div class="tags"><span>原创角色</span><span>分层模型</span><span>基础骨架</span></div>
+    <div class="section-label">观察模型 <span>VIEW</span></div>
+    <div class="view-grid" aria-label="相机视角">
+      <button data-view="front">正面 <span>01</span></button>
+      <button data-view="left">左侧 <span>02</span></button>
+      <button data-view="back">背面 <span>03</span></button>
+      <button data-view="right">右侧 <span>04</span></button>
+    </div>
+    <div class="section-label">显示方式 <span>DISPLAY</span></div>
+    <div class="segmented" aria-label="模型显示方式"><button data-mode="material" class="active">材质</button><button data-mode="clay">素模</button><button data-mode="wire">线框</button></div>
+    <div class="switch-row"><label for="rotate">自动转台</label><input id="rotate" type="checkbox" role="switch"></div>
+    <div class="switch-row"><label for="ortho">正交观察</label><input id="ortho" type="checkbox" role="switch"></div>
+    <div class="switch-row"><label for="skeleton">显示骨架</label><input id="skeleton" type="checkbox" role="switch"></div>
+    <div class="section-label">部件显隐 <span>LAYERS</span></div>
+    <div class="layer-controls"><button data-layer="hair" aria-pressed="true">发型</button><button data-layer="jacket" aria-pressed="true">外套</button><button data-layer="accessories" aria-pressed="true">配件</button><button data-layer="shoes" aria-pressed="true">鞋履</button></div>
+    <div class="section-label">完整文件 <span>DOWNLOAD</span></div>
+    <div class="downloads">
+      <a href="models/xiaoxiaomeng.glb" download><span class="file-icon">G</span><span>GLB <small>通用预览 · 内嵌材质</small></span><b>↗</b></a>
+      <a href="models/xiaoxiaomeng.fbx" download><span class="file-icon">F</span><span>FBX <small>建模软件 · 基础骨架</small></span><b>↗</b></a>
+      <a href="models/xiaoxiaomeng.blend" download><span class="file-icon">B</span><span>BLEND <small>分层工程 · 灯光与相机</small></span><b>↗</b></a>
+    </div>
+    <a class="sheet-link" href="assets/xiaoxiaomeng-character-model-sheet.png" target="_blank" rel="noreferrer">查看角色设定图 <span>↗</span></a>
+    <p class="small-note">未展示部位依据设定图补全。<br>骨架为基础 FK，不含面部表情与布料模拟。</p>
+  </aside>
+  <section class="stage" aria-label="小小萌交互式三维预览">
+    <div class="stage-top"><span class="status-pill"><i></i><span id="model-status">载入角色中</span></span><button id="reset" title="重置相机">↺ <span>重置视角</span></button></div>
+    <div class="stage-type" aria-hidden="true">小<br>小<br>萌</div>
+    <div id="canvas-container"></div>
+    <div id="loading" class="loading"><div class="loader-logo">萌</div><strong id="load-title">正在打开角色档案</strong><span id="progress">准备模型与材质</span><div class="progress-track"><i id="progress-bar"></i></div></div>
+    <div class="stage-caption"><span class="caption-number">001</span><div><strong>CHARCOAL / CHARTREUSE</strong><span>1 : 1 · 角色工作室</span></div></div>
+    <div class="stage-bottom"><span>拖动旋转 <i>·</i> 滚轮缩放 <i>·</i> 右键平移</span><button id="screenshot">↓ <span>保存当前视图</span></button></div>
+    <div class="model-stats" id="stats">模型载入中</div>
+    <div class="stage-corner">X / M<br><span>DESIGN STUDY</span></div>
+  </section>
+</main>
+<footer>小小萌原创角色 · Susuny001 <span>每一个角度，都值得看清。</span><a href="DELIVERY.md">交付说明 ↗</a></footer>
+<script type="module" src="viewer/app.js"></script>
+<noscript>请启用 JavaScript 以使用三维预览。您仍可使用左侧链接下载三个模型文件。</noscript>
+</body>
+</html>
