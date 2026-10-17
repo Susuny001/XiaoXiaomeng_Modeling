@@ -1,10 +1,9 @@
 # 学盟社小小萌建模
 
-以小小萌原创立绘和角色设定图为依据制作三维角色。
+**已暂停制作并归档当前进度。**
 
-制作顺序：头部与身体形体 → 面部拓扑 → 发束与裁片服装 → UV 与卡通材质 → 真实模型截图对照 → GLB、FBX、Blend 和预览器。
-
+- [下载工作归档 ZIP](https://raw.githubusercontent.com/Susuny001/XiaoXiaomeng_Modeling/main/archives/xiaoxiaomeng-work-in-progress.zip)
+- [暂停点与继续制作说明](archives/PROGRESS.md)
 - [角色设定图](assets/xiaoxiaomeng-character-model-sheet.png)
-- [制作流程与对照标准](MODELING_REVIEW.md)
 
-模型文件在造型、材质和实际截图对照完成后统一发布。
+归档保存当前头部与发型 Blender 工程、制作脚本、参考资料和多视角检查图。后续可从此进度继续。
