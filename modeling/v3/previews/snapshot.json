@@ -1,0 +1,24 @@
+{
+  "renderer": "Blender 4.3.2",
+  "source": "character-toon-work.blend",
+  "source_sha256": "6149530c10096293efd07e81456a756d305d77a376d3e69026f9be7f9d0d1e0d",
+  "rendered_at_utc": "2026-10-28T04:19:48.964151+00:00",
+  "resolution": [
+    900,
+    1100
+  ],
+  "views": [
+    {
+      "file": "front.png",
+      "sha256": "c76b598bbc3d5a674c106a1eac5f23ed0f8bdda35ccaafa151a096c92cb579aa"
+    },
+    {
+      "file": "quarter.png",
+      "sha256": "6afdcdeda20daa5a8ca439d1af0be8694bc91ee0acb66dfedfe4eac9557264ec"
+    },
+    {
+      "file": "back.png",
+      "sha256": "456de003a77b9098add4413d614117eb126d5553cca77620c9199d71208f73e1"
+    }
+  ]
+}

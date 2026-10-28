@@ -2,6 +2,16 @@
 
 本轮继续头部与发型工程，重建身体、服装、手部和鞋履。最终仍按原创立绘的实际模型截图对照要求制作；此目录保存制作源代码。
 
+## 当前模型快照
+
+以下图片由当前 Blender 三维工程直接渲染，随制作更新同步提交。
+
+| 正面 | 四分之三 | 背面 |
+| --- | --- | --- |
+| ![正面](previews/front.png) | ![四分之三](previews/quarter.png) | ![背面](previews/back.png) |
+
+[快照来源与渲染时间](previews/snapshot.json)
+
 ## 当前制作内容
 
 - 收窄脸部和眼距，修正头部朝向，调整右侧刘海遮挡。
@@ -24,6 +34,6 @@ blender -b models/head-work.blend -t 4 --python-exit-code 1 --python tools/build
 blender -b models/character-geometry.blend -t 4 --python-exit-code 1 --python tools/stylize_work.py
 ```
 
-首个脚本会从仓库的 `assets/xiaoxiaomeng-character-model-sheet.png` 准备本地参考文件。网格、图像与工作工程输出至 `models/`，真实三维检查图输出至 `renders/`。这两个输出目录保留在制作环境中，源码提交不生成最终三格式交付。
+首个脚本会从仓库的 `assets/xiaoxiaomeng-character-model-sheet.png` 准备本地参考文件。网格、图像与工作工程输出至 `models/`，真实三维检查图输出至 `renders/`。最后一个脚本在完成三视角渲染并保存工程后，自动将快照和来源记录同步到 `previews/`，供根 README 和本页显示。每次制作更新须将新的 `previews/` 一起提交。`models/` 和 `renders/` 保留在制作环境中，源码提交不生成最终三格式交付。
 
 当前保存的原生工作工程为 `character-geometry.blend` 和 `character-toon-work.blend`。造型、原图对齐、最终 UV、绑定与三格式导出仍继续在后续步骤完成。

@@ -1,10 +1,13 @@
 """Real mesh toon review: controlled normal ramps and inverted-hull outlines.
 Uses native painted eye surfaces and real garment geometry, no image card.
 """
-import bpy,bmesh,math
+import bpy,bmesh,math,hashlib,json,shutil
+from datetime import datetime,timezone
 from mathutils import Vector
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
+for directory in ('models','renders','previews'):
+ (ROOT/directory).mkdir(parents=True,exist_ok=True)
 def srgb(h):
  c=[int(h[i:i+2],16)/255 for i in [0,2,4]]
  return [x/12.92 if x<.04045 else ((x+.055)/1.055)**2.4 for x in c]
@@ -54,7 +57,9 @@ for ob in bpy.context.scene.objects:
 
 # The exact supplied nine-tile motif is mapped only onto the garment panel.
 # It remains a flat print; the rest of the jacket uses its own toon material.
-ref=bpy.data.images.get('Design reference') or bpy.data.images.load(str(ROOT/'assets'/'character-sheet.png'));ref.name='Design reference';ref.pack()
+ref_path=ROOT/'assets'/'character-sheet.png'
+if not ref_path.exists():ref_path=ROOT.parents[1]/'assets'/'xiaoxiaomeng-character-model-sheet.png'
+ref=bpy.data.images.get('Design reference') or bpy.data.images.load(str(ref_path));ref.name='Design reference';ref.pack()
 mat=bpy.data.materials.new('Hem print / source motif');mat.use_nodes=True;ns=mat.node_tree.nodes;ns.clear();tx=ns.new('ShaderNodeTexImage');tx.image=ref;em=ns.new('ShaderNodeEmission');out=ns.new('ShaderNodeOutputMaterial');mat.node_tree.links.new(tx.outputs['Color'],em.inputs[0]);mat.node_tree.links.new(em.outputs[0],out.inputs[0])
 from mathutils.bvhtree import BVHTree
 deps=bpy.context.evaluated_depsgraph_get()
@@ -105,3 +110,16 @@ scene.render.resolution_x=900;scene.render.resolution_y=1100
 for name,pos in [('toon-front',(0,-5,.90)),('toon-back',(0,5,.90)),('toon-quarter',(2.6,-5,1.20))]:
  cam.location=pos;cam.rotation_euler=(Vector((0,0,.90))-cam.location).to_track_quat('-Z','Y').to_euler();scene.render.filepath=str(ROOT/'renders'/(name+'.png'));bpy.ops.render.render(write_still=True)
 bpy.ops.wm.save_as_mainfile(filepath=str(ROOT/'models'/'character-toon-work.blend'),compress=True)
+
+# Keep the README previews tied to the same native scene as this render run.
+source=ROOT/'models'/'character-toon-work.blend'
+snapshot={'renderer':'Blender '+bpy.app.version_string,'source':source.name,
+          'source_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),
+          'rendered_at_utc':datetime.now(timezone.utc).isoformat(),
+          'resolution':[scene.render.resolution_x,scene.render.resolution_y],'views':[]}
+for view in ('front','quarter','back'):
+ src=ROOT/'renders'/('toon-'+view+'.png');dst=ROOT/'previews'/(view+'.png')
+ shutil.copy2(src,dst)
+ snapshot['views'].append({'file':dst.name,'sha256':hashlib.sha256(dst.read_bytes()).hexdigest()})
+(ROOT/'previews'/'snapshot.json').write_text(json.dumps(snapshot,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+print('README_PREVIEWS_UPDATED',str(ROOT/'previews'),flush=True)
