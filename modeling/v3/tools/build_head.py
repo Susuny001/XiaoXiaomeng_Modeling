@@ -59,17 +59,17 @@ def gaussian(x,z,cx,cz,wx,wz):return exp(-((x-cx)/wx)**2-((z-cz)/wz)**2)
 def relief(x,z):
  # Connected craniofacial sculpt: eye socket, brow, cheek, nose and lips.
  ax=abs(x);d=0
- d+=.0095*gaussian(ax,z,.045,.100,.027,.017)   # orbital hollow
+ d+=.0050*gaussian(ax,z,.045,.100,.031,.020)   # shallow anime orbital hollow
  d-=.0030*gaussian(ax,z,.045,.123,.033,.013)   # supraorbital ridge
  d-=.0035*gaussian(ax,z,.064,.075,.035,.023)   # malar plane
  d+=.0025*gaussian(ax,z,.084,.126,.025,.035)   # temple hollow
- d-=.0050*gaussian(x,z,0,.100,.012,.035)       # bridge, kept narrow
- d-=.0110*gaussian(x,z,0,.065,.011,.012)       # sculpted nasal tip
- d-=.0020*gaussian(ax,z,.010,.060,.006,.007)   # alar crease transition
+ d-=.0020*gaussian(x,z,0,.100,.010,.030)       # narrow bridge
+ d-=.0055*gaussian(x,z,0,.065,.009,.010)       # small drawn-profile nasal tip
+ d-=.0007*gaussian(ax,z,.008,.060,.004,.006)   # alar transition
  d+=.0012*gaussian(x,z,0,.048,.005,.009)       # philtrum
- d-=.0017*gaussian(x,z,0,.039,.020,.005)       # upper lip roll
- d+=.0015*gaussian(x,z,0,.0355,.022,.0015)     # mouth closure recess
- d-=.0020*gaussian(x,z,0,.031,.017,.0045)      # lower lip
+ d-=.0005*gaussian(x,z,0,.039,.012,.004)       # restrained lip roll
+ d+=.0005*gaussian(x,z,0,.0355,.012,.0015)     # mouth closure recess
+ d-=.0006*gaussian(x,z,0,.031,.011,.0045)      # lower lip
  d-=.0025*gaussian(x,z,0,.015,.025,.012)       # chin pad
  return d
 def front_y(x,z):
@@ -86,8 +86,8 @@ def eyelid(c,eye):
  if eye['s']==1:x=.021+.053*u;v=u
  else:x=-.074+.053*u;v=1-u
  centre=.101+.0017*v
- upper=centre+.0064*sin(pi*u)**.8+.0009
- lower=centre-.0082*sin(pi*u)**.8-.0009
+ upper=centre+.0090*sin(pi*u)**.65+.0009
+ lower=centre-.0140*sin(pi*u)**.8-.0009
  return x,lower,upper
 def surface(r,c):
  z=.277*r/R;t=-pi+2*pi*c/N;rx,rf,rb=profile(z);x=rx*sin(t)
@@ -198,22 +198,21 @@ for eye in EYES:
   lower.append((x,front_y(x,lo)-.0004,lo+CHIN))
   bz=.125+.0015*sin(pi*i/40)
   brow.append((x*.95,front_y(x*.95,bz)-.0008,bz+CHIN))
- ribbon('Upper lashes / tapered '+str(s),upper,[.0003+.0025*sin(pi*i/40)**.6 for i in range(41)],INK)
+ ribbon('Upper lashes / tapered '+str(s),upper,[.0004+.0043*sin(pi*i/40)**.6 for i in range(41)],INK)
  ribbon('Lower lid / fine '+str(s),lower,[.00018+.00035*sin(pi*i/40) for i in range(41)],LID)
  ribbon('Brow / soft arch '+str(s),brow,[.0003+.0018*sin(pi*i/40)**.8 for i in range(41)],INK)
 
 # Closed lips and tiny nostril accents follow the sculpted surface.
 mouth=[]
 for i in range(31):
- x=-.012+.024*i/30;z=.0357+.0006*(x/.012)**2
+ x=-.008+.016*i/30;z=.0357+.00015*(x/.008)**2
  mouth.append((x,front_y(x,z)-.0009,z+CHIN))
 ribbon('Mouth closure',mouth,[.0001+.00055*sin(pi*i/30) for i in range(31)],LIP)
-for s in [-1,1]:
- pts=[]
- for i in range(10):
-  x=s*(.005+.005*i/9);z=.060-.001*sin(pi*i/9)
-  pts.append((x,front_y(x,z)-.0002,z+CHIN))
- ribbon('Nostril crease '+str(s),pts,[.0001+.00025*sin(pi*i/9) for i in range(10)],LIP)
+pts=[]
+for i in range(10):
+ x=-.0015+.002*i/9;z=.063-.002*i/9
+ pts.append((x,front_y(x,z)-.0004,z+CHIN))
+ribbon('Nostril crease / single fine nose accent',pts,[.00015+.00025*sin(pi*i/9) for i in range(10)],LIP)
 
 # Ears are sculpted concha/helix surfaces, sized to sit under the hair.
 for s in [-1,1]:
@@ -261,7 +260,8 @@ def area(name,loc,power,size):
  ob.rotation_euler=(Vector((0,0,1.62))-ob.location).to_track_quat('-Z','Y').to_euler()
 area('Broad key',(-1,-2,3),25,2);area('Fill',(1,-1,2),8,2)
 d=bpy.data.cameras.new('Head review camera');cam=bpy.data.objects.new('Head review camera',d);scene.collection.objects.link(cam);scene.camera=cam;d.type='ORTHO';d.ortho_scale=.43
-for name,loc in [('head-front',(0,-3,1.64)),('head-side',(3,0,1.64)),('head-three-quarter',(1.9,-3,1.74))]:
+head_views=[] if '--skip-head-renders' in sys.argv else [('head-front',(0,-3,1.64)),('head-side',(3,0,1.64)),('head-three-quarter',(1.9,-3,1.74))]
+for name,loc in head_views:
  cam.location=loc;cam.rotation_euler=(Vector((0,0,1.62))-cam.location).to_track_quat('-Z','Y').to_euler()
  scene.render.filepath=str(ROOT/'renders'/(name+'.png'));bpy.ops.render.render(write_still=True)
 bpy.ops.wm.save_as_mainfile(filepath=str(ROOT/'models'/'head-work.blend'),compress=True)

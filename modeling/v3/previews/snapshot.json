@@ -1,8 +1,8 @@
 {
   "renderer": "Blender 4.3.2",
   "source": "character-toon-work.blend",
-  "source_sha256": "6149530c10096293efd07e81456a756d305d77a376d3e69026f9be7f9d0d1e0d",
-  "rendered_at_utc": "2026-10-28T04:19:48.964151+00:00",
+  "source_sha256": "436cc850ab8bd840292b43fa354198be4acd27aada3165a7e08e1b1bb11234fb",
+  "rendered_at_utc": "2026-10-28T04:43:28.130017+00:00",
   "resolution": [
     900,
     1100
@@ -10,15 +10,15 @@
   "views": [
     {
       "file": "front.png",
-      "sha256": "c76b598bbc3d5a674c106a1eac5f23ed0f8bdda35ccaafa151a096c92cb579aa"
+      "sha256": "ac9fa75e8a228a538a5cf6cf64d32e27f7efa2f3dc0f065665a53f7bfdeb9544"
     },
     {
       "file": "quarter.png",
-      "sha256": "6afdcdeda20daa5a8ca439d1af0be8694bc91ee0acb66dfedfe4eac9557264ec"
+      "sha256": "1b15bfbca69752d3388537e99921ab6cd5b0f715b9ab2921cbebb9bfbab3eb28"
     },
     {
       "file": "back.png",
-      "sha256": "456de003a77b9098add4413d614117eb126d5553cca77620c9199d71208f73e1"
+      "sha256": "60dff849ea41c847eb552d14b7535b51c8a259f46f8f67435ac755650949a684"
     }
   ]
 }

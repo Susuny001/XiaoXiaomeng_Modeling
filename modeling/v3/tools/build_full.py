@@ -14,8 +14,12 @@ def material(name,rgb):
  p=m.node_tree.nodes.get('Principled BSDF');p.inputs['Base Color'].default_value=(*rgb,1);p.inputs['Roughness'].default_value=.8
  return m
 WHITE=material('Ivory cloth',(.85,.86,.83));BLACK=material('Black canvas',(.045,.049,.047));SKIN=material('Hand skin',(.88,.75,.62));YELLOW=material('Cord yellow',(.80,.60,.025));GREEN=material('Webbing lime',(.48,.68,.04));GOLD=material('Brass fastenings',(.52,.40,.08))
-def mesh(name,vs,fs,ma=WHITE,col='CLOTH',sub=0,solid=0):
+def mesh(name,vs,fs,ma=WHITE,col='CLOTH',sub=0,solid=0,white_ranges=()):
  d=bpy.data.meshes.new(name);d.from_pydata(vs,[],fs);d.update()
+ if white_ranges:
+  tag=d.attributes.new('white_facing','BOOLEAN','FACE')
+  for start,end in white_ranges:
+   for i in range(start,end):tag.data[i].value=True
  bm=bmesh.new();bm.from_mesh(d);bmesh.ops.remove_doubles(bm,verts=bm.verts,dist=.00001)
  loose=[v for v in bm.verts if not v.link_faces]
  if loose:bmesh.ops.delete(bm,geom=loose,context='VERTS')
@@ -53,23 +57,31 @@ for ob in list(bpy.context.scene.objects):
 # The T-shirt has a real neckline opening and a shaped waist, behind the coat.
 vs=[];fs=[];N=80;R=40
 for j in range(R+1):
- u=j/R;z=1.105+.315*u
- rx,ry=interp([(1.105,.127,.075),(1.18,.145,.085),(1.29,.165,.090),(1.36,.178,.092),(1.42,.070,.047)],z)
+ u=j/R;z=1.105+.360*u
+ rx,ry=interp([(1.105,.127,.075),(1.18,.145,.085),(1.29,.165,.090),(1.36,.178,.092),(1.40,.148,.082),(1.465,.075,.054)],z)
  for i in range(N):
   t=2*pi*i/N;zz=z
-  if j>R-4:zz-=.045*max(cos(t),0)*(j-(R-4))/4
+  if j>R-8:zz-=.047*max(cos(t),0)**.70*(j-(R-8))/8
   # Local tension ridges converge toward the tucked-in waist.
   fold=.0025*exp(-((z-1.15)/.07)**2)*sin(4*t+z*10)
   x=(rx+fold)*sin(t);y=-(ry+fold)*cos(t)
   if cos(t)>0:
    for anchor,slope in [(-.095,-.30),(-.034,-.12),(.035,.17),(.092,.38)]:
     distance=x-(anchor+slope*(z-1.11));fade=exp(-((z-1.13)/.105)**2)
-    y-=.0055*exp(-(distance/.006)**2)*fade
-    y+=.0028*exp(-((distance-.009)/.006)**2)*fade
+    y-=.0100*exp(-(distance/.009)**2)*fade
+    y+=.0040*exp(-((distance-.012)/.008)**2)*fade
+   # Two broad diagonal drapes converge into the tucked waist.
+   for x0,z0,slope,amp in [(-.070,1.24,-.85,.009),(.032,1.21,-1.25,.013),(-.012,1.16,.65,.012)]:
+    line=z0+slope*(x-x0)
+    y-=amp*exp(-((z-line)/.010)**2)*exp(-((x-x0)/.080)**2)
   vs.append((x,y,zz))
 for j in range(R):
  for i in range(N):a=j*N+i;b=j*N+(i+1)%N;fs.append((a,b,b+N,a+N))
 shirt=mesh('T-shirt / neckline and draped torso',vs,fs,BLACK,sub=1,solid=.002)
+neckline=[]
+for i in range(N+1):
+ t=2*pi*i/N;neckline.append((.075*sin(t),-.054*cos(t)-.0020,1.465-.047*max(cos(t),0)**.70))
+curve('Seam / ribbed T-shirt neckline',neckline,.0016,BLACK,col='CLOTH')
 
 # Connected trouser legs, crotch gusset and pelvis. Axial silhouette controls
 # come from the front view; localized folds create physical cloth volume.
@@ -91,11 +103,13 @@ for s in [-1,1]:
    if j>rr-8:zv+=.035*sin(t)*s*(j-(rr-8))/8
    # Individually placed, directional cuff and knee fold planes.
    d=0
-   for z0,a,phase,span in [(.18,.009,.4,.60),(.235,.011,-.9,.85),(.292,.007,1.6,.65),(.56,.004,-.5,.50)]:
-    line=z0+.025*sin(t*1.35+phase*s)
-    angle=atan2(sin(t-phase),cos(t-phase))
-    local=exp(-(angle/span)**2)
-    d+=a*exp(-((z-line)/.009)**2)*local-.004*exp(-((z-line-.013)/.009)**2)*local
+   for z0,a,slope in [(.173,.010,-.5),(.222,.014,.7),(.277,.016,-.7),(.337,.006,.55),(.582,.006,-.8)]:
+    line=z0+.028*abs(sin(t)-.12*s)+slope*.030*sin(t)*s
+    local=max(cos(t),0)**.65
+    if z0>.4:local*=exp(-((sin(t)+.25*s)/.55)**2)
+    d+=a*exp(-((z-line)/.010)**2)*local-.007*exp(-((z-line-.017)/.012)**2)*local
+   # Distinct rear compression folds, rather than the same front pattern.
+   d+=.009*exp(-((z-(.215+.027*sin(t)))/.014)**2)*max(-cos(t),0)**2
    PV.append((cx+(rx+d)*sin(t),.008-(ry+d)*cos(t),zv))
  for j in range(rr):
   for i in range(nn):a=off+j*nn+i;b=off+j*nn+(i+1)%nn;PF.append((a,b,b+nn,a+nn))
@@ -126,18 +140,28 @@ mesh('Trousers / sewn waistband',v,f,BLACK,sub=1,solid=.003)
 
 # Open jacket bodice. The sleeve surfaces share the actual armhole vertices.
 vs=[];fs=[];NC=96;NR=60;t0=.26;t1=2*pi-.29
-ZROWS=[(.770,.218,.115,.121),(.795,.224,.118,.123),(.91,.204,.113,.121),(1.04,.177,.105,.115),(1.11,.174,.104,.108),(1.24,.181,.104,.110),(1.35,.199,.104,.111),(1.415,.194,.091,.102)]
+ZROWS=[(.770,-.026,.253,.115,.121),(.795,-.022,.265,.118,.123),(.91,-.017,.229,.113,.121),(1.04,-.012,.203,.105,.115),(1.11,-.009,.190,.104,.108),(1.24,-.004,.184,.104,.110),(1.35,0,.199,.104,.111),(1.415,0,.194,.091,.102)]
+OPENING=[(.770,144,203),(.91,142,202),(1.04,141,202),(1.11,141,201),(1.24,148,203),(1.35,160,203),(1.415,171,201)]
+def coat_surface(z,fraction):
+ cx,rx,front,back=interp(ZROWS,z);left,right=interp(OPENING,z)
+ start=math.asin(max(-.95,min(.95,((right-185)*S-cx)/rx)))
+ end=2*pi-math.asin(max(-.95,min(.95,(cx-(left-185)*S)/rx)))
+ t=start+(end-start)*fraction;x=cx+rx*sin(t);y=-(front if cos(t)>0 else back)*cos(t)
+ return x,y,t
 for j in range(NR+1):
- z=.770+(.645)*j/NR;rx,front,back=interp(ZROWS,z)
+ z=.770+(.645)*j/NR
  for i in range(NC+1):
-  t=t0+(t1-t0)*i/NC;x=rx*sin(t);y=-(front if cos(t)>0 else back)*cos(t);zz=z
+  x,y,t=coat_surface(z,i/NC);zz=z
   if j>NR-4:zz+=.012*cos(2*t)*(j-(NR-4))/4
   if abs(t-pi)<.8:zz-=.006*sin(j/NR*pi)
   # Front panel folds are local to the waist and lower hem.
   frontw=max(cos(t),0)**4
-  y-=frontw*(.004*exp(-((z-(.87+.09*abs(x)/.22))/.025)**2))
+  y-=frontw*(.011*exp(-((z-(.87+.10*abs(x)/.25))/.018)**2))
+  y-=frontw*.006*exp(-((z-(1.10+.09*x))/.012)**2)
+  for x0,z0,slope,amp in [(-.17,1.15,-1.6,.010),(.17,1.10,1.2,.012),(-.20,.92,.6,.011)]:
+   y-=frontw*amp*exp(-((z-(z0+slope*(x-x0)))/.014)**2)*exp(-((x-x0)/.07)**2)
   vs.append((x,y,zz))
-HOLES=[]
+HOLES=[];CUFF_RANGES=[]
 for s,theta in [(1,pi/2),(-1,3*pi/2)]:
  centre=round((theta-t0)/(t1-t0)*NC);lo=centre-7;hi=centre+7;low=47;high=59
  HOLES.append((s,lo,hi,low,high))
@@ -151,7 +175,8 @@ for s,lo,hi,low,high in HOLES:
  centre=sum((Vector(vs[k]) for k in edge),Vector())/len(edge)
  tangent=Vector((s*.57,0,-.82)).normalized();front=Vector((0,-1,0));up=Vector((s*.82,0,.57)).normalized()
  angles=[atan2((Vector(vs[k])-centre).dot(up),(Vector(vs[k])-centre).dot(front)) for k in edge]
- controls=[(0,centre.x,centre.z,.068,.075),(.16,s*.241,1.300,.075,.078),(.40,s*.313,1.174,.066,.069),(.68,s*.382,1.048,.070,.071),(1,s*.441,.944,.064,.067)]
+ wrist=.400 if s<0 else .441
+ controls=[(0,centre.x,centre.z,.068,.075),(.16,s*.241,1.300,.078,.080),(.40,s*.300,1.174,.074,.076),(.68,s*(wrist-.050),1.048,.078,.073),(1,s*wrist,.944,.064,.067)]
  previous=edge
  for row in range(1,37):
   u=row/36;cx,cz,ry,rv=interp(controls,u);c=Vector((cx,-.006,cz));ring=[]
@@ -159,19 +184,30 @@ for s,lo,hi,low,high in HOLES:
    p=c+front*(ry*cos(a))+up*(rv*sin(a))
    if row<5:p=Vector(vs[edge[k]]).lerp(p,row/5)
    # Elbow gathers: two partial diagonal folds, fading before side seams.
-   p+=front*(.004*exp(-((u-.51-.04*sin(a))/.045)**2)*max(cos(a),0)**3)
-   p+=up*(.003*exp(-((u-.58+.04*cos(a))/.04)**2)*max(sin(a),0)**3)
+   p+=front*(.012*exp(-((u-.51-.07*sin(a))/.035)**2)*max(cos(a),0)**2)
+   p+=front*(-.006*exp(-((u-.56-.07*sin(a))/.035)**2)*max(cos(a),0)**2)
+   p+=up*(.010*exp(-((u-.65+.06*cos(a))/.035)**2)*max(sin(a),0)**2)
    ring.append(len(vs));vs.append(p)
   for k in range(len(ring)):fs.append((previous[k],previous[(k+1)%len(ring)],ring[(k+1)%len(ring)],ring[k]))
   previous=ring
  # Folded cuff is a real continuation turning back over the sleeve.
+ cuff_start=len(fs)
  for row in range(1,9):
-  u=row/8;ring=[];c=Vector((s*.441,-.006,.944))+tangent*(-.047*u)
+  u=row/8;ring=[];c=Vector((s*wrist,-.006,.944))+tangent*(-.047*u)
   for a in angles:
    p=c+front*((.066+.003*sin(pi*u))*cos(a))+up*((.069+.003*sin(pi*u))*sin(a));ring.append(len(vs));vs.append(p)
   for k in range(len(ring)):fs.append((previous[k],previous[(k+1)%len(ring)],ring[(k+1)%len(ring)],ring[k]))
   previous=ring
-jacket=mesh('Jacket / joined bodice armholes sleeves and cuffs',vs,fs,WHITE,sub=1,solid=.004)
+ CUFF_RANGES.append((cuff_start,len(fs)))
+ curve('Seam / coat cuff '+str(s),[Vector(vs[k])+Vector((0,-.0008,0)) for k in previous+[previous[0]]],.0008,BLACK,col='CLOTH')
+jacket=mesh('Jacket / joined bodice armholes sleeves and cuffs',vs,fs,WHITE,sub=1,solid=.004,white_ranges=CUFF_RANGES)
+for name,z in [('Seam / coat waist join',1.105),('Seam / coat lower binding',.795)]:
+ points=[]
+ for i in range(81):
+  x,y,t=coat_surface(z,i/80);points.append((x,y-.0015*cos(t),z))
+ curve(name,points,.0009,BLACK,col='CLOTH')
+for edge in [0,NC]:
+ curve('Seam / coat front facing '+str(edge),[Vector(vs[ci(j,edge)])+Vector((0,-.001,0)) for j in range(NR+1)],.0008,BLACK,col='CLOTH')
 
 # Folded collar pieces, fitted to the coat rather than floating wire outlines.
 def folded_panel(name,points):
@@ -179,25 +215,30 @@ def folded_panel(name,points):
  vs=points+[c];fs=[]
  for i in range(len(points)):fs.append((i,(i+1)%len(points),len(points)))
  return mesh(name,vs,fs,WHITE,solid=.004)
-folded_panel('Collar / right folded stand',[px(138,164,.005),px(172,173,-.066),px(173,215,-.119),px(157,196,-.128),px(135,190,-.028)])
+folded_panel('Collar / right folded stand',[px(126,164,.035),px(153,173,-.066),px(153,197,-.119),px(137,188,-.128),px(120,185,.005)])
 folded_panel('Collar / left folded stand',[px(234,159,.018),px(202,174,-.068),px(201,216,-.119),px(220,194,-.125),px(244,187,.014)])
 # Hood has a connected rim-to-tip surface with continuous fabric thickness.
 vs=[];fs=[];U=48;V=30
 for j in range(V+1):
  v=j/V
  for i in range(U+1):
-  u=-1+2*i/U;x=.195*u*(1-.77*v);y=.090+.057*(1-u*u)+.015*sin(pi*v);z=1.496-.226*v*(1-.17*abs(u))-.034*abs(u)
+  u=-1+2*i/U;x=.180*u*(1-.98*v);y=.122+.047*(1-u*u)+.041*sin(pi*v);z=1.496-.226*v*(1-.17*abs(u))-.034*abs(u)
   vs.append((x,y,z))
 for j in range(V):
  for i in range(U):a=j*(U+1)+i;fs.append((a,a+1,a+U+2,a+U+1))
 hood=mesh('Hood / shaped back shell',vs,fs,WHITE,sub=1,solid=.004)
+for v in [.025,.43,.74]:
+ pts=[]
+ for i in range(49):
+  u=-1+2*i/48;pts.append((.180*u*(1-.98*v),.124+.047*(1-u*u)+.041*sin(pi*v),1.496-.226*v*(1-.17*abs(u))-.034*abs(u)))
+ curve('Seam / coat hood fold '+str(v),pts,.0007,BLACK,col='CLOTH')
 
 # Continuous hand surfaces: palm grid, four welded finger ports and thumb port.
 for s,side in [(-1,'R'),(1,'L')]:
  v=[];f=[];rows=7;columns=4
  for back in [False,True]:
   for j in range(rows+1):
-   u=j/rows;z=.938-.067*u;cx=s*(.451+.017*u);w=.020+.011*sin(pi*u/2);th=.0115-.002*u
+   u=j/rows;z=.938-.067*u;cx=s*((.410 if s<0 else .451)+.017*u);w=.020+.011*sin(pi*u/2);th=.0115-.002*u
    for i in range(columns+1):
     x=cx+(i/columns-.5)*w*2;y=-.011+(th if back else -th)*(1-.12*abs(i/columns-.5));v.append((x,y,z))
  layer=(rows+1)*(columns+1)
@@ -248,8 +289,8 @@ def shoe_ring(name,s,sections):
  fs.append(tuple(reversed(range(n))));fs.append(tuple((len(sections)-1)*n+i for i in range(n)))
  return mesh(name,vs,fs,WHITE,col='SHOES',sub=1)
 for s,side in [(-1,'R'),(1,'L')]:
- shoe_ring('Shoe / shaped layered cupsole.'+side,s,[(.011,.98,.99,.98),(.017,1.03,1.01,1.01),(.045,1.03,1.01,1.01),(.054,1.,1.,1.)])
- shoe_ring('Shoe / sculpted leather upper.'+side,s,[(.051,.96,.99,.99),(.066,.97,.98,.98),(.085,.95,.94,.96),(.107,.87,.77,.91),(.132,.76,.44,.85),(.160,.65,.07,.78),(.169,.63,.03,.77)])
+ shoe_ring('Shoe / shaped layered cupsole.'+side,s,[(.011,1.,1.,1.),(.014,1.03,1.01,1.01),(.040,1.03,1.01,1.01),(.044,1.02,1.01,1.01),(.046,1.,1.,1.)])
+ shoe_ring('Shoe / sculpted leather upper.'+side,s,[(.043,.995,1.,1.),(.046,.995,1.,1.),(.060,.98,.99,.98),(.078,.95,.95,.96),(.099,.87,.77,.91),(.123,.76,.44,.85),(.145,.65,.07,.78),(.148,.63,.03,.77)])
  rot=Matrix.Rotation(s*math.radians(15),4,'Z');centre=Vector((s*.145,0,0))
  def sp(x,y,z):return centre+rot@Vector((x,y,z))
  # Shoe tongue and actual raised lacing follow the instep height.
@@ -265,6 +306,10 @@ for s,side in [(-1,'R'),(1,'L')]:
    if j<5:curve('Lace / crossing %s %s %s'%(side,j,e),[sp(e*w,y,z),sp(0,y+.013,z+.009),sp(-e*(w-.001),y+.024,z+.010)],.0015,YELLOW)
  curve('Lace / bow A.'+side,[sp(0,-.018,.175),sp(-.023,-.030,.184),sp(-.025,-.009,.184),sp(0,-.018,.175)],.0015,YELLOW)
  curve('Lace / bow B.'+side,[sp(0,-.018,.175),sp(.023,-.030,.184),sp(.026,-.008,.184),sp(0,-.018,.175)],.0015,YELLOW)
+ shoe_ring('Shoe / lime ankle lining.'+side,s,[(.142,.66,.07,.77),(.147,.66,.045,.77),(.151,.63,.03,.75)])
+ for sy in [-1,1]:
+  curve('Seam / coat shoe quarter '+side+str(sy),[sp(sy*.055,-.190,.071),sp(sy*.057,-.135,.084),sp(sy*.049,-.071,.113),sp(sy*.038,.015,.142)],.0007,BLACK,col='SHOES')
+ curve('Seam / coat toe cap '+side,[sp(-.054,-.165,.074),sp(-.035,-.183,.078),sp(0,-.188,.080),sp(.035,-.183,.078),sp(.054,-.165,.074)],.0008,BLACK,col='SHOES')
 
 # Functional cords and the asymmetric right-side webbing have real thickness.
 for x in [148,215]:
@@ -278,6 +323,31 @@ ob=mesh('RIGHT / long woven strap',vv,ff,GREEN,col='DETAILS',solid=.0015);ob['te
 # Cargo pocket is a shaped, gusseted sewn shell, attached to the right thigh.
 vs=[px(125,390,-.043),px(135,392,-.086),px(139,448,-.092),px(126,452,-.062),px(122,392,.026),px(123,451,.022)]
 mesh('RIGHT / cargo gusset and flap',vs,[(0,1,2,3),(0,3,5,4),(0,4,1),(3,2,5)],BLACK,solid=.002)
+flap=[px(124,390,-.049),px(136,392,-.091),px(136,402,-.095),px(125,403,-.059)]
+mesh('RIGHT / cargo folded flap',flap,[(0,1,2,3)],BLACK,col='DETAILS',solid=.002)
+curve('Seam / ribbed cargo flap',[p+Vector((0,-.001,0)) for p in flap+[flap[0]]],.0007,BLACK)
+
+# Fitted hardware follows the actual cloth surface, including the arm tab.
+from mathutils.bvhtree import BVHTree
+deps=bpy.context.evaluated_depsgraph_get();tree=BVHTree.FromObject(jacket,deps)
+def garment_point(x,y,offset=.0015):
+ p=px(x,y,-2);hit,normal,index,distance=tree.ray_cast(p,Vector((0,1,0)),4)
+ return Vector((p.x,(hit.y if hit is not None else -.10)-offset,p.z))
+def hardware(name,p,radius,annular=False):
+ vv=[];ff=[];n=32
+ rings=[(1.,0),(.96,.0015),(.80,.0025),(.45,.0024)] if not annular else [(1.,0),(.98,.0015),(.65,.0020),(.45,.0010)]
+ for r,d in rings:
+  for i in range(n):
+   a=2*pi*i/n;vv.append(p+Vector((radius*r*cos(a),-d,radius*r*sin(a))))
+ for j in range(len(rings)-1):
+  for i in range(n):a=j*n+i;b=j*n+(i+1)%n;ff.append((a,b,b+n,a+n))
+ if not annular:ff.append(tuple((len(rings)-1)*n+i for i in range(n)))
+ return mesh(name,vv,ff,GOLD,col='DETAILS')
+for x,y in [(138,378),(207,378)]:hardware('Snap / lower coat '+str(x),garment_point(x,y),.0040)
+for x,y in [(149,190),(215,190)]:hardware('Eyelet / hood drawcord '+str(x),garment_point(x,y),.0035,True)
+for x,y in [(151,174),(202,171)]:hardware('Snap / collar '+str(x),px(x,y,-.102),.0042)
+tab=[garment_point(x,y,.0020) for x,y in [(237,190),(243,192),(254,217),(248,220)]]
+mesh('Sleeve badge / left lime tab',tab,[(0,1,2,3)],GREEN,col='DETAILS',solid=.0015)
 
 # Store a native, editable working scene before the albedo alignment pass.
 scene=bpy.context.scene;scene['production_stage']='Connected garment and anatomy surfaces; reference-albedo alignment in progress.'

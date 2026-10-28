@@ -24,8 +24,12 @@ def sample(points,t):
  a=Vector(points[max(0,i-1)]);b=Vector(points[i]);c=Vector(points[i+1]);d=Vector(points[min(len(points)-1,i+2)])
  return .5*(2*b+(-a+c)*u+(2*a-5*b+4*c-d)*u*u+(-a+3*b-3*c+d)*u*u*u)
 def hair_y(x,z):
- t=max(0,min(1,(1.784-z)/.134))
- return .010-.113*sqrt(max(.08,1-(x/.155)**2))*sin(pi*.5*t)
+ # Follow the cranial surface near the roots, then fall away around the face.
+ crown=max(0,(z-1.630)/.151)
+ y=.010-.120*sqrt(max(.025,1-(x/.157)**2-crown*crown))
+ cap=1-(x/.135)**2-((z-1.632)/.151)**2
+ if cap>0:y=min(y,-.003-.128*sqrt(cap)-.002)
+ return y
 S=1.78/537
 def xyz(p,bias=0):
  x=(p[0]-185)*S;z=(613-p[1])*S
@@ -37,7 +41,7 @@ def patch(name,left,right,ma=CHAR,depth=.010,bias=0):
  for back in [False,True]:
   for j in range(rows+1):
    t=j/rows;a=sample(l,t);b=sample(r,t)
-   thickness=depth*(.35+.65*sin(pi*t)**.5)*(1-.85*t**9)
+   thickness=depth*.48*(.35+.65*sin(pi*t)**.5)*(1-.96*t**9)
    for i in range(cols+1):
     u=i/cols;p=a.lerp(b,u)
     p.y+=((.40 if back else -1)*thickness*sin(pi*u)**.70)
@@ -64,9 +68,9 @@ def patch(name,left,right,ma=CHAR,depth=.010,bias=0):
 vs=[];fs=[];nr=36;nt=96
 for j in range(nr+1):
  for i in range(nt):
-  a=2*pi*i/nt;end=1.08+.74*(1+sin(a))/2
+  a=2*pi*i/nt;end=1.49+.49*(1+sin(a))/2
   p=.001+(end-.001)*j/nr
-  x=.137*sin(p)*cos(a);y=.014+.116*sin(p)*sin(a);z=1.630+.146*cos(p)
+  x=.135*sin(p)*cos(a);y=-.003+.128*sin(p)*sin(a);z=1.632+.151*cos(p)
   # Offset the part and soften asymmetry in the crown.
   x+=.003*sin(p)*sin(a*2);z+=.0015*sin(a*3)*sin(p)
   vs.append((x,y,z))
@@ -96,9 +100,15 @@ def free_lock(name,centres,widths,depths,ma=CHAR):
    t=j/rows;p=sample(pts,t)
    k=min(len(widths)-2,int(t*(len(widths)-1)));u=t*(len(widths)-1)-k
    w=widths[k]*(1-u)+widths[k+1]*u;d=depths[k]*(1-u)+depths[k+1]*u
+   if name.startswith('Side bob'):
+    side=Vector((p.y-.014,-p.x,0)).normalized()
+    if side.x<0:side=-side
+    normal=Vector((p.x,p.y-.014,0)).normalized()
+   else:side=Vector((1,0,0));normal=Vector((0,1,0))
    for i in range(cols+1):
-    a=i/cols;x=p.x+(a-.5)*w*2;y=p.y+(1 if back else -1)*d*sin(pi*a)**.8
-    vs.append((x,y,p.z))
+    a=i/cols;q=p+side*((a-.5)*w*2)
+    q+=normal*((1 if back else -.32)*d*sin(pi*a)**.8)
+    vs.append(q)
  layer=(rows+1)*(cols+1)
  for back in [False,True]:
   off=layer if back else 0
@@ -113,13 +123,27 @@ for s in [-1,1]:
  for i in range(4):
   f=i/3
   free_lock('Side bob / %s.%s'%(s,i),[(s*.072,.027+f*.055,1.744),(s*(.120+.012*f),.013+.067*f,1.660),(s*(.130+.018*f),.005+.075*f,1.568),(s*(.111+.028*f),-.003+.085*f,1.536+.015*f)],[.013,.025,.025,.0004],[.006,.010,.010,.0005],[CHAR,MID,CHAR,LIGHT][i])
- # Three broad rear locks per side, with distinct bends and uneven tips.
- for i in range(3):
-  f=i/2
-  free_lock('Long rear / %s.%s'%(s,i),[(s*(.070+.012*f),.093,1.681),(s*(.105+.022*f),.129,1.547),(s*(.137+.022*f),.161,1.387),(s*(.143+.020*f),.138,1.228),(s*(.127+.032*f),.104,1.153+.057*f)],[.013,.030,.032,.026,.0005],[.008,.014,.015,.012,.0005],[CHAR,MID,CHAR][i])
-for i in range(5):
- x=-.083+i*.0415
- free_lock('Occipital / broad nape plane '+str(i),[(x*.35,.069,1.745),(x*.9,.112,1.671),(x*1.10,.114,1.595),(x*1.20,.096,1.562+.012*sin(i*1.7))],[.018,.029,.028,.0005],[.006,.008,.009,.0004],[MID,CHAR,LIGHT,CHAR,MID][i])
+ # Overlapping S-shaped rear locks, with independent bends and narrow tips.
+ for i in range(5):
+  f=i/4;tip=1.145+.070*f+.016*sin(i*2.3+s)
+  free_lock('Long rear / %s.%s'%(s,i),
+    [(s*(.075+.011*f),.090,1.692),(s*(.108+.018*f),.127+.008*f,1.558),
+     (s*(.101+.090*f),.165+.012*sin(i),1.425),(s*(.112+.081*f),.168+.019*cos(i),1.302),
+     (s*(.098+.078*f),.145+.018*sin(i),tip+.040),(s*(.088+.078*f),.139+.015*sin(i),tip)],
+    [.009,.018,.023,.021,.012,.00015],[.004,.007,.008,.006,.004,.0002],[CHAR,MID,CHAR,LIGHT,CHAR][i])
+
+# Crown layers wrap the volume from a shared part, rather than ending as a cap.
+for i in range(9):
+ a=.06+(pi-.12)*i/8
+ centres=[]
+ for j in range(6):
+  p=.11+1.74*j/5
+  aa=a+.09*sin(p*1.7+i*.3)
+  centres.append((.137*sin(p)*cos(aa),.014+.121*sin(p)*sin(aa),1.630+.147*cos(p)))
+ free_lock('Occipital / crown flow '+str(i),centres,[.006,.016,.024,.026,.023,.0002],[.003,.004,.006,.007,.005,.0002],[MID,CHAR,LIGHT,CHAR,MID,CHAR,MID,CHAR,MID][i])
+for i in range(7):
+ x=-.091+i*.0303
+ free_lock('Occipital / tapered nape '+str(i),[(x*.80,.106,1.657),(x,.133,1.587),(x*1.06,.122,1.521),(x*.90,.103,1.480+.017*sin(i*1.6))],[.017,.021,.019,.0002],[.004,.006,.005,.0002],[CHAR,MID,CHAR,LIGHT,CHAR,MID,CHAR][i])
 
 def strip3d(name,points,width,ma,closed=False):
  pts=[Vector(p) for p in points];vs=[];fs=[];n=64
